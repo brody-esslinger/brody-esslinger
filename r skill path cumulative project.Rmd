@@ -1,0 +1,53 @@
+---
+title: "R Skill Path Cumulative Project"
+output: html_notebook
+---
+
+In this notebook, I will be analyzing several trends in Google search data using R. The data was accessed using the `gtrendsR` package.
+
+The code below is initializing the `gtrendsR` package and storing data related to skateboarding in the `skate_trends` data frame. I also initialize `magrittr` and `dplry` for some ease of use and summarization.
+
+```{r}
+library(magrittr)
+library(dplyr)
+library(gtrendsR)
+skate_trends <- gtrends(keyword = c('skate board', 'skateboard', 'skate boarding', 'skateboarding'))
+```
+
+Next, I'll be inspecting the data and looking for any changes that need to be made in formatting for analysis.
+
+```{r}
+head(skate_trends)
+str(skate_trends)
+```
+
+Upon initial inspection, there are several visualizations I think could be interesting using `ggplot2`. First, I'll count popularity by country.
+
+```{r}
+clean_country <- skate_trends$interest_by_country %>% filter(hits > 0)
+library(ggplot2)
+country_plot <- clean_country %>% ggplot(aes(x=location, y=hits)) + geom_col() + theme(axis.text.x = element_text(angle = 90, size = 5))
+country_plot
+```
+
+We can see that the terms selected for skateboarding seem to be most popular in Australia, New Zealand, United States, and Canada. Due to filtering to countries with more than 0 hits, there are also many countries that aren't represented on this graph. We can look at these countries as the ones where skateboarding is most popular throughout the world.
+
+The next visualization will look at the most common related search terms to skateboard using the `related_queries` data frame.
+
+```{r}
+clean_related <- skate_trends$related_queries %>% group_by(value) %>% summarise(hits = n())
+queries_bar <- clean_related %>% filter(hits > 1) %>% ggplot(aes(x=value, y=hits)) + geom_col() + theme(axis.text.x = element_text(angle = 90, size = 5))
+queries_bar
+```
+
+There are a wide variety of related queries ranging from 'skate boarding lessons' to 'vans'. It seems people are usually looking for parts or shoes to buy when they search for skateboards. There are also a considerable number of related results for people looking to actively skate or learn. Outside of anime and the olymics, we also don't see any examples of people wanting to watch videos of skateboarding.
+
+I would also like to graph the general interest in skateboarding over time, and the data frame `$interest_over_time` seems like a perfect candidate to use for this.
+
+```{r}
+interest_df <- skate_trends$interest_over_time %>% select(date, hits) %>% mutate(hits = as.numeric(hits))
+interest_plot <- interest_df %>% ggplot(aes(x=date, y=hits)) + geom_point()
+interest_plot
+```
+
+We can see a spike in popularity halfway through 2020, and an even bigger spike before 2022. The spike before 2022 is no doubt due to the olympics adding it as a sport for those games. As for the general spike in 2020, I would attribute that to a combination of factors. Due to the global pandemic people were spending more time inside and forced to find ways to keep themselves occupied. Due to social media and the general move towards acceptance of skateboarding by society, many new people began skating or picked it back up after quitting. We also have seen a huge boom in skate park construction and an increase in technology allowing more exposure and better gear. Everything comes together to create the lockdown skate spike we see above. All that being said, it seems the popularity is back on the decline due to supply issues and restrictions regarding social gatherings loosening. There was an excellent article on SkateboardersHQ that goes more into depth on this topic, but they came to many of the same conclusions as I did.
